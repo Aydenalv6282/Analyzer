@@ -2,11 +2,12 @@ import csv
 from urllib.request import urlopen
 import yfinance as yf
 from matplotlib import pyplot as plt
+import numpy
 # https://www.nasdaq.com/market-activity/stocks/screener?exchange=NASDAQ&render=download
 # opening the CSV file
 suitable = []
-L = 0.01  # LEARNING RATE
-epochs = 1000  # LOOPS
+L = 0.001  # LEARNING RATE
+epochs = 10000  # LOOPS
 
 with open('Assets/RAW_DATA.csv', mode='r') as file:
     # reading the CSV file
@@ -45,6 +46,25 @@ def gradient_descent(m_now, b_now, x_vals, y_vals):
     return m, b
 
 
+def absolute_best_line(x_vals, y_vals):
+    sy = numpy.std(y_vals)
+    sx = numpy.std(x_vals)
+    my = numpy.mean(y_vals)
+    mx = numpy.mean(x_vals)
+    nume = 0
+    denomx = 0
+    denomy = 0
+    for i in range(len(x_vals)):
+        nume += (x_vals[i]-mx)*(y_vals[i]-my)
+        denomx += (x_vals[i]-mx)**2
+        denomy += (y_vals[i]-my)**2
+    denom = numpy.sqrt(denomx*denomy)
+    r = nume/denom
+    m = r*(sy/sx)
+    b = my-m*mx
+    return m, b, my
+
+
 suitable = ["TSLA"]
 for s in suitable:
     stock = yf.Ticker(s)
@@ -52,14 +72,22 @@ for s in suitable:
     x_vals = [c for c in range(len(df['Close']))]
     y_vals = df['Close']
     plt.scatter(x_vals, y_vals, color="blue")
-    m = 0
-    b = 0
+    m1 = 0
+    b1 = 0
     for i in range(epochs):
-        m, b = gradient_descent(m, b, x_vals, y_vals)
-
+        m1, b1 = gradient_descent(m1, b1, x_vals, y_vals)
+    m2, b2 = numpy.polyfit(x_vals, y_vals, 1)
+    m3, b3, my = absolute_best_line(x_vals, y_vals)
     line_vals = []
-    for x in x_vals:
-        line_vals.append(m*x+b)
+    line_vals2 = []
+    line_vals3 = []
 
-    plt.plot(x_vals, line_vals, color="red")
+    for x in x_vals:
+        line_vals.append(m1*x+b1)
+        line_vals2.append(m2*x+b2)
+        line_vals3.append(m3*x+b3)
+
+    plt.plot(x_vals, line_vals, color="red")  # Gradient Descent
+    plt.plot(x_vals, line_vals2, color="purple")  # Numpy
+    plt.plot(x_vals, line_vals3, color="green")  # Absolute Method (Stats)
 plt.show()
