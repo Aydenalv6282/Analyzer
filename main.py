@@ -5,9 +5,10 @@ from matplotlib import pyplot as plt
 import numpy
 # https://www.nasdaq.com/market-activity/stocks/screener?exchange=NASDAQ&render=download
 # opening the CSV file
+# THOUGHT: THE BEST LEARNING RATE IS (1/(D2*1/(D3*1/(D4...))) While Dn != 0
 suitable = []
-L = 0.001  # LEARNING RATE
-epochs = 10000  # LOOPS
+
+epochs = 50  # LOOPS
 
 with open('Assets/RAW_DATA.csv', mode='r') as file:
     # reading the CSV file
@@ -20,7 +21,6 @@ with open('Assets/RAW_DATA.csv', mode='r') as file:
                 and float(line[4].replace("%", "")) <= -10 and float(line[8]) > 86400:
             suitable.append(line[0])
             cnt += 1
-    print(cnt)
 
 
 def loss_function(m, b, x_vals, y_vals):
@@ -31,22 +31,30 @@ def loss_function(m, b, x_vals, y_vals):
     return total_error/n
 
 
-def gradient_descent(m_now, b_now, x_vals, y_vals):
+def gradient_descent_linear(m_now, b_now, x_vals, y_vals):
     m_gradient = 0
     b_gradient = 0
+    m_gradient2 = 0
+    b_gradient2 = 2
+    # M AND B ARE ONLY DIFFERENTIABLE 2 TIMES
     n = len(x_vals)
     for i in range(n):
         x = x_vals[i]
         y = y_vals[i]
-
         m_gradient += -(2/n) * x * (y - (m_now * x + b_now))
         b_gradient += -(2/n) * (y - (m_now * x + b_now))
-    m = m_now - m_gradient * L
-    b = b_now - b_gradient * L
+        m_gradient2 += (2/n) * x**2
+    m = m_now - m_gradient * abs((1/m_gradient2))
+    b = b_now - b_gradient * abs((1/b_gradient2))
+    print(m, b)
+    line_vals_app = []
+    for x in x_vals:
+        line_vals_app.append(m*x+b)
+    plt.plot(x_vals, line_vals_app, color="yellow")  # Gradient Descent
     return m, b
 
 
-def absolute_best_line(x_vals, y_vals):
+def absolute_best_line(x_vals, y_vals):  # AP STAT METHOD
     sy = numpy.std(y_vals)
     sx = numpy.std(x_vals)
     my = numpy.mean(y_vals)
@@ -62,7 +70,8 @@ def absolute_best_line(x_vals, y_vals):
     r = nume/denom
     m = r*(sy/sx)
     b = my-m*mx
-    return m, b, my
+
+    return m, b
 
 
 suitable = ["TSLA"]
@@ -75,19 +84,13 @@ for s in suitable:
     m1 = 0
     b1 = 0
     for i in range(epochs):
-        m1, b1 = gradient_descent(m1, b1, x_vals, y_vals)
-    m2, b2 = numpy.polyfit(x_vals, y_vals, 1)
-    m3, b3, my = absolute_best_line(x_vals, y_vals)
-    line_vals = []
+        m1, b1 = gradient_descent_linear(m1, b1, x_vals, y_vals)
+    m2, b2 = absolute_best_line(x_vals, y_vals)
+    line_vals1 = []
     line_vals2 = []
-    line_vals3 = []
-
     for x in x_vals:
-        line_vals.append(m1*x+b1)
+        line_vals1.append(m1*x+b1)
         line_vals2.append(m2*x+b2)
-        line_vals3.append(m3*x+b3)
-
-    plt.plot(x_vals, line_vals, color="red")  # Gradient Descent
-    plt.plot(x_vals, line_vals2, color="purple")  # Numpy
-    plt.plot(x_vals, line_vals3, color="green")  # Absolute Method (Stats)
+    plt.plot(x_vals, line_vals2, color="green")  # Absolute Method (Stats)
+    plt.plot(x_vals, line_vals1, color="red")  # Gradient Descent
 plt.show()
