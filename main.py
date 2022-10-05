@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import numpy
 # https://www.nasdaq.com/market-activity/stocks/screener?exchange=NASDAQ&render=download
 # opening the CSV file
-# THOUGHT: THE BEST LEARNING RATE IS (1/(D2*1/(D3*1/(D4...))) While Dn != 0
+# THOUGHT: THE BEST LEARNING RATE IS (1/(D2*1/(D3*1/(D4...))) While Dn != 0 ?
 suitable = []
 
 epochs = 50  # LOOPS
@@ -31,7 +31,7 @@ def loss_function(m, b, x_vals, y_vals):
     return total_error/n
 
 
-def gradient_descent_linear(m_now, b_now, x_vals, y_vals):
+def gradient_descent_linear(x_vals, y_vals, m_now, b_now):
     m_gradient = 0
     b_gradient = 0
     m_gradient2 = 0
@@ -44,14 +44,50 @@ def gradient_descent_linear(m_now, b_now, x_vals, y_vals):
         m_gradient += -(2/n) * x * (y - (m_now * x + b_now))
         b_gradient += -(2/n) * (y - (m_now * x + b_now))
         m_gradient2 += (2/n) * x**2
-    m = m_now - m_gradient * abs((1/m_gradient2))
-    b = b_now - b_gradient * abs((1/b_gradient2))
-    print(m, b)
+    m = m_now - m_gradient * abs(1/m_gradient2)
+    b = b_now - b_gradient * abs(1/b_gradient2)
     line_vals_app = []
     for x in x_vals:
         line_vals_app.append(m*x+b)
-    plt.plot(x_vals, line_vals_app, color="yellow")  # Gradient Descent
+    #plt.plot(x_vals, line_vals_app, color="yellow")  # Gradient Descent
     return m, b
+
+
+def gradient_descent_sine(x_vals, y_vals, a_now, b_now, m_now, c_now):
+    a_gradient = 0
+    b_gradient = 0
+    m_gradient = 0
+    c_gradient = 0
+    a_gradient2 = 0
+    b_gradient2 = 0
+    m_gradient2 = 0
+    c_gradient2 = 2
+    n = len(x_vals)
+    # Partial[Power[\(40)y-\(40)a*sin\(40)bx\(41)+mx+c\(41)\(41),2],m]
+    for i in range(n):
+        x = x_vals[i]
+        y = y_vals[i]
+        bx = b_now*x
+        sbx = numpy.sin(bx)
+        cbx = numpy.cos(bx)
+        a_gradient += (2/n)*(sbx)*(y-(a_now*sbx+c_now+m_now*x))
+        a_gradient2 += (2/n)*(sbx**2)
+        b_gradient += (2/n)*(a_now*cbx)*(y-(a_now*sbx+c_now+m_now*x))
+        b_gradient2 += (2/n)*(a_now*(x**2))*(a_now*numpy.cos(2*bx)-sbx*(y-(c_now+m_now*x)))
+        m_gradient += (2/n)*(x)*(y-(a_now*sbx+c_now+m_now*x))
+        m_gradient2 += (2/n)*(x**2)
+        c_gradient += (2/n)*(y-(a_now*sbx+c_now+m_now*x))
+        print(sbx, cbx)
+    a = a_now - a_gradient * abs((1/a_gradient2))
+    b = b_now - b_gradient * abs((1/b_gradient2))
+    m = m_now - m_gradient * abs((1/m_gradient2))
+    c = c_now - c_gradient * abs((1/c_gradient2))
+    print(a, b, m, c)
+    line_vals_app = []
+    for x in x_vals:
+        line_vals_app.append(a*numpy.sin(b*x)+m*x+c)
+    plt.plot(x_vals, line_vals_app, color="yellow")  # Gradient Descent Progress
+    return a, b, m, c
 
 
 def absolute_best_line(x_vals, y_vals):  # AP STAT METHOD
@@ -81,16 +117,23 @@ for s in suitable:
     x_vals = [c for c in range(len(df['Close']))]
     y_vals = df['Close']
     plt.scatter(x_vals, y_vals, color="blue")
-    m1 = 0
-    b1 = 0
+    m1, b1 = 0, 0
+
+    #Sine Variables
+    a, b, m, c = 0.1, 0.1, 0.1, 0.1
+
     for i in range(epochs):
-        m1, b1 = gradient_descent_linear(m1, b1, x_vals, y_vals)
+        m1, b1 = gradient_descent_linear(x_vals, y_vals, m1, b1)
+        a, b, m, c = gradient_descent_sine(x_vals, y_vals, a, b, m, c)
     m2, b2 = absolute_best_line(x_vals, y_vals)
     line_vals1 = []
     line_vals2 = []
+    sine_vals = []
     for x in x_vals:
         line_vals1.append(m1*x+b1)
         line_vals2.append(m2*x+b2)
-    plt.plot(x_vals, line_vals2, color="green")  # Absolute Method (Stats)
-    plt.plot(x_vals, line_vals1, color="red")  # Gradient Descent
+        sine_vals.append(a*numpy.sin(b*x)+m*x+c)
+    plt.plot(x_vals, line_vals2, color="green")  # Linear Absolute Method (Stats)
+    #plt.plot(x_vals, line_vals1, color="red")  # Linear Gradient Descent
+    plt.plot(x_vals, sine_vals, color="purple")  # Sine Gradient Descent
 plt.show()
