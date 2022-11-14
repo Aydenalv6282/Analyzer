@@ -36,19 +36,22 @@ for s in suitable:
     plt.scatter(x_vals, y_vals, color="blue")
     plt.title(s)
 
-    # Line Variables
+    # Line Variables (To Estimate Sine Variables)
     ml, bl = numpy.polyfit(x_vals, y_vals, 1)
+    line_vals = []
+    resid = []
+    for x in x_vals:
+        line_vals.append(ml*x+bl)
+        resid.append(y_vals[x]-line_vals[-1])
 
     # Sine Variables
-    popt, pcov = scipy.optimize.curve_fit(sinusoid, x_vals, y_vals, p0=[3, 0.5, 4, ml, bl], maxfev=100000)
+    al = (abs(max(resid))+abs(min(resid)))/2
+    popt, pcov = scipy.optimize.curve_fit(sinusoid, x_vals, y_vals, p0=[al, 0.5, 0, ml, bl], maxfev=100000)
     a, b, c, m, d = popt
-    print("mb: ", m, ml, d, bl)
-    line_vals = []
     sine_x_vals = []
     sine_vals = []
     sine_smooth_vals = []
     for x in x_vals:
-        line_vals.append(ml*x+bl)
         sine_vals.append(a * numpy.sin(b * x + c) + m * x + d)
     for i in range(len(x_vals)*100):
         x = i/100
@@ -61,5 +64,5 @@ for s in suitable:
     LSE = sum(numpy.square(numpy.subtract(y_vals, line_vals)))  # Line Square Error
     SE = sum(numpy.subtract(y_vals, sine_vals))  # Sine Error
     LE = sum(numpy.subtract(y_vals, line_vals))  # Line Error
-    print(LSE/SSE)
+    print(LSE/SSE, LSE, SSE)
     plt.show()
